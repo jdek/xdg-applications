@@ -43,7 +43,7 @@ fn parse_desktop_files(paths: Vec<PathBuf>) -> Vec<Desktop> {
     paths
         .into_iter()
         .filter_map(|path| parse_entry(&path).ok())
-        .filter_map(|parsed_entry| extract_desktop_from_entry(parsed_entry))
+        .filter_map(extract_desktop_from_entry)
         .collect()
 }
 
@@ -88,11 +88,11 @@ fn reset_sigpipe() {
 }
 
 #[cfg(feature = "search")]
-fn filter(input: BTreeMap<String, Desktop>, term: &String) -> Vec<Desktop> {
+fn filter(input: BTreeMap<String, Desktop>, term: &str) -> Vec<Desktop> {
     let matcher = SkimMatcherV2::default();
     let entries: Vec<(i64, Desktop)> = input
-        .into_iter()
-        .map(|(_, entry)| {
+        .into_values()
+        .map(|entry| {
             let score = matcher
                 .fuzzy(&entry.name, term, false)
                 .map(|(score, _)| score);
@@ -105,7 +105,7 @@ fn filter(input: BTreeMap<String, Desktop>, term: &String) -> Vec<Desktop> {
 }
 
 #[cfg(not(feature = "search"))]
-fn filter(input: BTreeMap<String, Desktop>, _term: &String) -> Vec<Desktop> {
+fn filter(input: BTreeMap<String, Desktop>, _term: &str) -> Vec<Desktop> {
     input.into_iter().map(|(_, entry)| entry).collect()
 }
 
@@ -145,7 +145,7 @@ fn main() {
     let mut out: Vec<Desktop> = if args.len() == 2 {
         filter(dedup_map, &args[1])
     } else {
-        dedup_map.into_iter().map(|(_, entry)| entry).collect()
+        dedup_map.into_values().collect()
     };
 
     out.sort_by_key(|n| n.name.to_lowercase());
